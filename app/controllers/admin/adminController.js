@@ -73,17 +73,30 @@ router.post('/budgetnew', authenticateUser,authorizeAdminUser,function(req,res)
       })
 })
 
-router.get('/expenses',authenticateUser,authorizeAdminUser, function(req,res)
+router.get('/expenses/:id',authenticateUser, function(req,res)
 {
-    Expense.find()
+    const id=req.params.id
+    Expense.find({claimedBy: id})
     .populate('Category')
     .populate('expenseEvent')
     .populate('claimedBy')
     .populate('claimedFor')
-    // .exec(function(error,expense)
-    //                 {
-    //                     console.log(JSON.stringify(expense,null,"\t"))
-    //                 })  
+    .then(function(expenses){
+        res.send(expenses)
+    })
+    .catch(function(err)
+    {
+        res.send(err)
+    })
+})
+
+router.get('/expenses',authenticateUser, authorizeAdminUser,function(req,res)
+{
+    Expense.find({reimburseStatus: "pending" })
+    .populate('Category')
+    .populate('expenseEvent')
+    .populate('claimedBy')
+    .populate('claimedFor')
     .then(function(expenses){
         res.send(expenses)
     })
@@ -95,9 +108,6 @@ router.get('/expenses',authenticateUser,authorizeAdminUser, function(req,res)
 
 
 router.post('/expenses', authenticateUser, function (req, res) {
-    //const body = req.body // const { body } = req 
-  //strong parameters
-
   let loadExpense = {totalAmount: req.body.formData.totalAmount,Category:'',expenseDate:req.body.formData.expenseDate,expenseEvent:'',claimedBy:req.user.id,claimedFor:''}
   let categoryname = req.body.formData.Category
   Category.findOne({categoryname})
@@ -157,10 +167,78 @@ router.post('/csv',authenticateUser,authorizeAdminUser,function(req,res)
 })
 .catch(function (err) {
     res.send(err)
-}) 
-
-
+   }) 
 })
+
+router.get('/groups',authenticateUser,authorizeAdminUser, function(req,res)
+{
+    Group.find()
+    .then(function(group){
+        res.send(group)
+    })
+    .catch(function(err)
+    {
+        res.send(err)
+    })
+})
+
+
+router.put('/expenses/:id',function(req,res)
+{
+    const id = req.params.id
+    Expense.findByIdAndUpdate(id, {reimburseStatus: "approved"} , { new:true} )
+        .then(function (expense) {
+            res.send({ 
+                expense,
+                notice: 'updated status' })
+        })
+        .catch(function (err) {
+            res.send(err)
+        })
+})
+
+router.put('/expenses/reject/:id',function(req,res)
+{
+    const id = req.params.id
+    Expense.findByIdAndUpdate(id, {reimburseStatus: "rejected"} , { new:true} )
+        .then(function (expense) {
+            res.send({ 
+                expense,
+                notice: 'updated status' })
+        })
+        .catch(function (err) {
+            res.send(err)
+        })
+})
+
+router.post('/usernew',authenticateUser,function(req,res)
+{
+    let body = _.pick(req.body,['uername','email','password','Group'])
+    const user = new Category(body)
+    user.save()
+    .then(function(user)
+    {
+        res.send(user)
+    })
+    .catch(function(err)
+    {
+        res.send(err)
+    })
+})
+
+router.get('/users',authenticateUser, function(req,res)
+{
+    User.find()
+    .populate('Group')
+    .then(function(group){
+        res.send(group)
+    })
+    .catch(function(err)
+    {
+        res.send(err)
+    })
+})
+
 
 module.exports = {
     adminRouter: router

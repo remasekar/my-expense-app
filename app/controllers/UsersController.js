@@ -39,6 +39,33 @@ router.post('/login', function (req, res) {
         })
 })
 
+router.post('/isadmin',function (req, res) {
+    const body = _.pick(req.body,['email'])
+    email= body.email
+    console.log("email",email)
+    User.findOne({ email })
+        .then(function (user) {
+            console.log(user)
+            if (user.roles.includes('admin')) {
+                res.send ({ 
+                    id: user.id,
+                    isadmin : true
+                })
+            }
+            else{
+                res.send(
+                    {
+                    id: user.id,
+                    isadmin: false
+                    })
+            }
+        })
+        .catch(function (err) {
+            res.send(err)
+        })
+})
+
+
 router.delete('/logout', authenticateUser, function (req, res) {
     const { user, token } = req
     User.findByIdAndUpdate(user._id, { $pull: { tokens: { token: token } } })
@@ -49,6 +76,7 @@ router.delete('/logout', authenticateUser, function (req, res) {
             res.send(err)
         })
 })
+
 
 module.exports = { 
     usersRouter: router

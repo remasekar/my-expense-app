@@ -43,7 +43,8 @@ const userSchema = new Schema({
     ],
     roles: 
     {
-        type: [String]
+        type: [String],
+        default: "user"
     },
     
     allowAccess:

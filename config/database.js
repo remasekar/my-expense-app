@@ -3,6 +3,7 @@ const mongoose = require('mongoose')
 // configure mongoose to use global promises
 mongoose.Promise = global.Promise
 
+
 // establish a database connection
 mongoose.connect('mongodb://localhost:27017/add-expense-app', { useNewUrlParser: true, useCreateIndex: true})
     .then(function () {
