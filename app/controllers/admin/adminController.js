@@ -16,7 +16,6 @@ const csv = require('csvtojson')
 router.post('/register', function (req, res) {
     //const body = req.body
     let body = _.pick(req.body,['username','email','password','Group'])
-    //console.log(body)
     const user = new User(body)
     user.save()
         .then(function (user) {
@@ -73,6 +72,19 @@ router.post('/budgetnew', authenticateUser,authorizeAdminUser,function(req,res)
       })
 })
 
+router.get('/budgets',authenticateUser, function(req,res)
+{
+    Budget.find()
+    .populate('Group')
+    .then(function(budgets){
+        res.send(budgets)
+    })
+    .catch(function(err)
+    {
+        res.send(err)
+    })
+})
+
 router.get('/expenses/:id',authenticateUser, function(req,res)
 {
     const id=req.params.id
@@ -106,47 +118,69 @@ router.get('/expenses',authenticateUser, authorizeAdminUser,function(req,res)
     })
 })
 
-
-router.post('/expenses', authenticateUser, function (req, res) {
-  let loadExpense = {totalAmount: req.body.formData.totalAmount,Category:'',expenseDate:req.body.formData.expenseDate,expenseEvent:'',claimedBy:req.user.id,claimedFor:''}
-  let categoryname = req.body.formData.Category
-  Category.findOne({categoryname})
-  .then(function(category)
-  {
-     if (category)
-     {
-         loadExpense.Category = category.id
-         let claimEvent = req.body.formData.expenseEvent
-         Budget.findOne({claimEvent})
-        .then(function(budget)
+router.post('/expenses',authenticateUser,function(req,res)
+{
+    let splitVal = req.body.splitVal
+    let body= _.pick(req.body,['totalAmount','Category','expenseDate','expenseEvent','claimedBy','claimedFor'])
+    let totalAmount = body.totalAmount
+    if ( splitVal == 'a'){
+        let usernameArr = req.body.claimedFor.split(",")
+        if ( usernameArr.length > 1 )
         {
-         if(budget)
-          {loadExpense.expenseEvent = budget.id }
-          let username = req.body.formData.claimedFor
-          User.findOne({username})
-          .then(function(user)
-          {
-           if(user)
-           { 
-              loadExpense.claimedFor = user.id 
-              console.log("load",loadExpense)
-              const expense = new Expense(loadExpense)
-              expense.save()
-                  .then(function (expense) {
-                      res.send({
-                          expense,
-                          notice: 'successfully recorded a expense'
-                      })
+             totalAmount = (totalAmount / (usernameArr.length) )
+        }
+        else{
+             totalAmount = totalAmount
+        }
+        usernameArr.map((username)=> {
+            User.findOne({username})
+            .then(function(user)
+            {
+                if(user)
+                {
+                body.claimedFor = user.id
+                body.totalAmount = totalAmount
+                const expense = new Expense(body)
+                 expense.save()
+                  .then(function(expense)
+                  {
+                      res.send(expense)
                   })
-                  .catch(function (err) {
+                  .catch(function(err)
+                  {
                       res.send(err)
-                  }) 
-           }
-          })
-         })
-     }       
-  })   
+                  })
+                }
+            })
+        })
+    }
+    else{
+        let customSplit = req.body.claimedFor.split(",")
+        customSplit.map((arr)=>{
+            let username = arr.substring(0,arr.indexOf("-"))
+            User.findOne({username})
+            .then(function(user)
+            {
+                if(user)
+                {
+                 body.claimedFor = user.id
+                 body.totalAmount = (arr.substring((arr.indexOf("-"))+1))
+                 const expense = new Expense(body)
+                 expense.save()
+                 .then(function(expense)
+                 {
+                   res.send(expense)
+                 })
+                 .catch(function(err)
+                 {
+                  res.send(err)
+                 })
+                }
+            })
+        })
+    }
 })
+
 
 router.post('/csv',authenticateUser,authorizeAdminUser,function(req,res)
 {
@@ -213,8 +247,8 @@ router.put('/expenses/reject/:id',function(req,res)
 
 router.post('/usernew',authenticateUser,function(req,res)
 {
-    let body = _.pick(req.body,['uername','email','password','Group'])
-    const user = new Category(body)
+    let body = _.pick(req.body,['username','email','password','Group'])
+    const user = new User(body)
     user.save()
     .then(function(user)
     {
@@ -230,8 +264,20 @@ router.get('/users',authenticateUser, function(req,res)
 {
     User.find()
     .populate('Group')
-    .then(function(group){
-        res.send(group)
+    .then(function(users){
+        res.send(users)
+    })
+    .catch(function(err)
+    {
+        res.send(err)
+    })
+})
+
+router.get('/cats',authenticateUser, function(req,res)
+{
+    Category.find()
+    .then(function(cats){
+        res.send(cats)
     })
     .catch(function(err)
     {

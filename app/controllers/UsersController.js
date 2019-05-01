@@ -8,7 +8,6 @@ const _ = require('lodash')
 router.post('/register', function (req, res) {
     //const body = req.body
     let body = _.pick(req.body,['username','email','password','Group'])
-    //console.log(body)
     const user = new User(body)
     user.save()
         .then(function (user) {
@@ -23,10 +22,6 @@ router.post('/register', function (req, res) {
 // localhost:3000/users/login 
 router.post('/login', function (req, res) {
     const body = req.body
-    // console.log(body)
-    // const login = (Object.values(body)[0])
-    // console.log("login",login,)
-    // const login = (Object.values(body)[0].indexOf('@') === -1) ? {username: username} : { email : username }
     User.findByCredentials(body.email, body.password)
         .then(function (user) {
             return user.generateToken() 
@@ -42,10 +37,8 @@ router.post('/login', function (req, res) {
 router.post('/isadmin',function (req, res) {
     const body = _.pick(req.body,['email'])
     email= body.email
-    console.log("email",email)
     User.findOne({ email })
         .then(function (user) {
-            console.log(user)
             if (user.roles.includes('admin')) {
                 res.send ({ 
                     id: user.id,
